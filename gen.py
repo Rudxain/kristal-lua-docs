@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
+from typing import Final
 import os
-import sys
 import subprocess
 import re
 
@@ -11,7 +12,7 @@ subprocess.call(['git', 'submodule', 'update', '--init', '--remote', "Kristal"])
 
 SRC_PATH = os.path.join("Kristal", "src")
 
-ignore = [
+ignore: Final = [
     os.path.join("engine", "loadthread.lua"),
     os.path.join("engine", "loadstate.lua"),
     os.path.join("utils", "graphics.lua"),
@@ -23,14 +24,14 @@ ignore = [
     os.path.join("engine", "overlay.lua"),
 ]
 
-copy = [
+copy: Final = [
     os.path.join("engine", "vars.lua"),
     os.path.join("engine", "statevars.lua"),
     os.path.join("engine", "vendcust.lua"),
 ]
 
-scripts = []
-copy_scripts = []
+scripts: list[str] = []
+copy_scripts: list[str] = []
 
 # Loop through the files recursively inside the "Kristal/src" directory, excluding the "lib" directory
 for root, dirs, files in os.walk(SRC_PATH, topdown=False):
@@ -56,13 +57,13 @@ if os.path.exists("library"):
 # Create a new "library" folder
 os.mkdir("library")
 
-event_calls = []
+event_calls: list[str | None] = []
 
 # Now we read each script file and process it
 for script in scripts:
-    functions = []
-    classes = []
-    aliases = []
+    functions: list[tuple[str | None, str | None]] = []
+    classes: list[tuple[str | None, str | None]] = []
+    aliases: list[str | None] = []
 
     # Read the script file
     with open(os.path.join(SRC_PATH, script)) as f:
@@ -87,14 +88,13 @@ for script in scripts:
         # Find standalone documentation comments (usually aliases)
         for match in re.finditer(r"((?:^---.*$[\r\n]*)+)$(?!\n\S)", data, flags=re.M):
             aliases.append(match.group(1))
-    
+
     # Create a new file in the "library" folder matching the script file name, creating the directory if it doesn't exist
     os.makedirs(os.path.join("library", os.path.dirname(script)), exist_ok=True)
     with open(os.path.join("library", script), "w") as f:
         # Write the script file name as a comment
         normal_path = script.replace("\\", "/")
-        f.write(
-f"""--[[
+        f.write(f"""--[[
     Generated from {os.path.join(SRC_PATH, script)}
 
     Source: https://github.com/KristalTeam/Kristal/blob/main/src/{normal_path}
@@ -112,6 +112,7 @@ f"""--[[
 
         # Write the aliases
         for alias in aliases:
+            assert alias != None
             if alias.startswith("---@diagnostic"):
                 continue
             f.write(alias)
@@ -119,6 +120,7 @@ f"""--[[
 
         # Write the functions
         for function in functions:
+            assert function[1] != None
             # Ignore love callbacks
             if "love." in function[1]:
                 continue
@@ -148,7 +150,7 @@ f"""--[[
 
     Source: https://github.com/KristalTeam/Kristal/blob/main/src/{normal_path}
 ]]""")
-        
+
         # Append the meta annotation to the file
         f.write("\n\n---@meta\n\n")
 
